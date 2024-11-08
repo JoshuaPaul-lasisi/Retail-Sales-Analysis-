@@ -21,6 +21,19 @@ data = load_data('../data/processed/cleaned_sales_data.csv')
 st.title("Retail Sales Analysis Dashboard")
 st.write("This dashboard provides insights into sales trends, categories, and seasonal patterns.")
 
+def load_google_trends(kw_list=["Retail Sales"], geo='US', timeframe='today 5-y'):
+    pytrends = TrendReq(hl='en-US', tz=360)
+    pytrends.build_payload(kw_list, timeframe=timeframe, geo=geo)
+    trends_data = pytrends.interest_over_time()
+
+    if not trends_data.empty:
+        if 'isPartial' in trends_data.columns:
+            trends_data = trends_data.drop(columns=['isPartial'])
+        trends_data = trends_data.rename(columns={"date": "Date", kw_list[0]: "Interest"})
+        return trends_data
+    else:
+        return None
+
 # Sidebar filters
 st.sidebar.header("Filters")
 category_filter = st.sidebar.multiselect("Select Categories", data['Category'].unique())
@@ -62,34 +75,10 @@ forecast = model.predict(future)
 fig = plot_plotly(model, forecast)
 st.plotly_chart(fig)
 
-# External Data Integration 
-# Set up pytrends
-pytrends = TrendReq(hl='en-US', tz=360)
-
-# Specify search terms and parameters
-kw_list = ["Retail Sales"]  # Replace with your search term(s)
-pytrends.build_payload(kw_list, timeframe='today 5-y', geo='US')  # Adjust timeframe and region as needed
-
-# Get interest over time
-trends_data = pytrends.interest_over_time()
-
-# Check if data was returned successfully
-if not trends_data.empty:
-    # Remove 'isPartial' column, if present
-    if 'isPartial' in trends_data.columns:
-        trends_data = trends_data.drop(columns=['isPartial'])
-
-    # Save data to CSV (optional)
-    trends_data.to_csv('google_trends_data.csv')
-
-    # Load the data again (optional, to simulate loading from a file)
-    trends_data = pd.read_csv("google_trends_data.csv")
-
-    # Rename columns for easier plotting
-    trends_data = trends_data.rename(columns={"date": "Date", "Retail Sales": "Interest"})
-
-    # Plot using Plotly
+# Load Google Trends data and plot if available
+trends_data = load_google_trends()
+if trends_data is not None:
     fig = px.line(trends_data, x='Date', y='Interest', title='Google Trends Data')
     st.plotly_chart(fig)
 else:
-    st.write("No data found for the specified keywords and timeframe.")
+    st.write("No Google Trends data found for the specified keywords and timeframe.")
