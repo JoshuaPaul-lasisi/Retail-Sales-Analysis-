@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 from prophet import Prophet
 from prophet.plot import plot_plotly
+from pytrends.request import TrendReq
+import plotly.express as px
 
 # Load data
 @st.cache_data
@@ -60,10 +62,34 @@ forecast = model.predict(future)
 fig = plot_plotly(model, forecast)
 st.plotly_chart(fig)
 
-# External Data Integration (Optional)
-# Google Trends data example
-# Uncomment and adjust the path if you have a Google Trends CSV file
-# trends_data = pd.read_csv("path_to_your_google_trends_data.csv")
-# fig = px.line(trends_data, x='Date', y='Interest', title='Google Trends Data')
-# st.plotly_chart(fig)
-# https://serpapi.com/search?engine=google_trends&q=Coffee&geo=NG
+# External Data Integration 
+# Set up pytrends
+pytrends = TrendReq(hl='en-US', tz=360)
+
+# Specify search terms and parameters
+kw_list = ["Retail Sales"]  # Replace with your search term(s)
+pytrends.build_payload(kw_list, timeframe='today 5-y', geo='US')  # Adjust timeframe and region as needed
+
+# Get interest over time
+trends_data = pytrends.interest_over_time()
+
+# Check if data was returned successfully
+if not trends_data.empty:
+    # Remove 'isPartial' column, if present
+    if 'isPartial' in trends_data.columns:
+        trends_data = trends_data.drop(columns=['isPartial'])
+
+    # Save data to CSV (optional)
+    trends_data.to_csv('google_trends_data.csv')
+
+    # Load the data again (optional, to simulate loading from a file)
+    trends_data = pd.read_csv("google_trends_data.csv")
+
+    # Rename columns for easier plotting
+    trends_data = trends_data.rename(columns={"date": "Date", "Retail Sales": "Interest"})
+
+    # Plot using Plotly
+    fig = px.line(trends_data, x='Date', y='Interest', title='Google Trends Data')
+    st.plotly_chart(fig)
+else:
+    st.write("No data found for the specified keywords and timeframe.")
