@@ -45,6 +45,7 @@ st.plotly_chart(fig)
 
 st.subheader("Monthly Sales Trend")
 filtered_data['Month'] = filtered_data['Date'].dt.to_period('M')
+filtered_data['Month'] = filtered_data['Month'].dt.to_timestamp()
 monthly_sales = filtered_data.groupby('Month')['Amount'].sum().reset_index()
 fig = px.line(monthly_sales, x='Month', y='Amount', title='Monthly Sales Trend')
 st.plotly_chart(fig)
@@ -65,3 +66,4 @@ st.plotly_chart(fig)
 # trends_data = pd.read_csv("path_to_your_google_trends_data.csv")
 # fig = px.line(trends_data, x='Date', y='Interest', title='Google Trends Data')
 # st.plotly_chart(fig)
+# https://serpapi.com/search?engine=google_trends&q=Coffee&geo=NG
